@@ -4,14 +4,14 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>🎤 WAV 음성 녹음 데모</title>
+    <title>음성 녹음 데모</title>
     <!-- Recorder.js CDN -->
     <script src="https://cdn.jsdelivr.net/gh/mattdiamond/Recorderjs@master/dist/recorder.js"></script>
 
 </head>
 
 <body>
-    <h2>🎤 WAV 음성 녹음 데모 (Recorder.js)</h2>
+    <h2>음성 녹음 데모</h2>
     <button id="startBtn">🎙️ 녹음 시작</button>
     <button id="stopBtn" disabled>🛑 녹음 종료</button>
     <a id="downloadLink" style="display:none;" download="recording.wav">🔽 녹음 파일 다운로드</a>
@@ -24,6 +24,7 @@
     <pre id="logBox" style="background-color: #f0f0f0; padding: 10px; height: 160px; overflow-y: auto;"></pre>
 
     <script>
+
         let audioContext, recorder, stream;
         const startBtn = document.getElementById('startBtn');
         const stopBtn = document.getElementById('stopBtn');
