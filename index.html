@@ -4,14 +4,16 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>🎤 음성 녹음 데모</title>
+    <title>🎤 WAV 음성 녹음 데모</title>
+    <!-- Recorder.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/recorder-js@1.0.3/dist/recorder.js"></script>
 </head>
 
 <body>
-    <h2>🎤 음성 녹음 데모 (모바일용)</h2>
-
-    <button id="startBtn">녹음 시작</button>
-    <button id="stopBtn" disabled>녹음 종료</button>
+    <h2>🎤 WAV 음성 녹음 데모 (Recorder.js)</h2>
+    <button id="startBtn">🎙️ 녹음 시작</button>
+    <button id="stopBtn" disabled>🛑 녹음 종료</button>
+    <a id="downloadLink" style="display:none;" download="recording.wav">🔽 녹음 파일 다운로드</a>
 
     <p><strong>🎧 녹음 결과:</strong></p>
     <audio id="audioPlayback" controls style="display: none;"></audio>
@@ -21,12 +23,10 @@
     <pre id="logBox" style="background-color: #f0f0f0; padding: 10px; height: 160px; overflow-y: auto;"></pre>
 
     <script>
-        let mediaRecorder;
-        let recordedChunks = [];
-        let audioBlob;
-
+        let audioContext, recorder, stream;
         const startBtn = document.getElementById('startBtn');
         const stopBtn = document.getElementById('stopBtn');
+        const downloadLink = document.getElementById('downloadLink');
         const audioPlayback = document.getElementById('audioPlayback');
         const logBox = document.getElementById('logBox');
 
@@ -38,23 +38,17 @@
         startBtn.onclick = async () => {
             log("🎬 녹음 시작 버튼 클릭됨");
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                recordedChunks = [];
-                mediaRecorder = new MediaRecorder(stream);
+                stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const input = audioContext.createMediaStreamSource(stream);
+                recorder = new Recorder(input, { numChannels: 1 });
+                recorder.record();
 
-                mediaRecorder.ondataavailable = e => recordedChunks.push(e.data);
-
-                mediaRecorder.onstop = () => {
-                    audioBlob = new Blob(recordedChunks, { type: 'audio/webm' });
-                    audioPlayback.src = URL.createObjectURL(audioBlob);
-                    audioPlayback.style.display = 'block';
-                    log("✅ 녹음 완료. 재생 가능.");
-                };
-
-                mediaRecorder.start();
                 startBtn.disabled = true;
                 stopBtn.disabled = false;
-                log("⏺️ MediaRecorder 녹음 시작");
+                audioPlayback.style.display = 'none';
+                downloadLink.style.display = 'none';
+                log("⏺️ 녹음 중...");
             } catch (err) {
                 log("❌ 마이크 접근 실패: " + err.message);
             }
@@ -62,16 +56,25 @@
 
         stopBtn.onclick = () => {
             log("🛑 녹음 종료 버튼 클릭됨");
-            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-                mediaRecorder.stop();
-                startBtn.disabled = false;
-                stopBtn.disabled = true;
-            }
+            stopBtn.disabled = true;
+            startBtn.disabled = false;
 
-            if (mediaRecorder.stream) {
-                mediaRecorder.stream.getTracks().forEach(track => track.stop());
-                log("🔇 마이크 스트림 해제됨");
-            }
+            recorder.stop();
+            stream.getTracks().forEach(track => track.stop());
+
+            recorder.exportWAV(blob => {
+                const url = URL.createObjectURL(blob);
+                audioPlayback.src = url;
+                audioPlayback.style.display = 'block';
+
+                downloadLink.href = url;
+                downloadLink.style.display = 'inline';
+                downloadLink.download = 'recording.wav';
+                downloadLink.textContent = `🔽 녹음 파일 다운로드 (${new Date().toLocaleTimeString()})`;
+
+                log(`✅ WAV 파일 생성 완료. 파일 크기: ${(blob.size / 1024).toFixed(1)} KB`);
+                recorder.clear();
+            });
         };
     </script>
 </body>
