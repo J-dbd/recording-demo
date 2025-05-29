@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>모바일 음성 녹음 및 STT</title>
+</head>
+
+<body>
+    <h2>🎤 음성 녹음 및 인식</h2>
+
+    <button id="startBtn">녹음 시작</button>
+    <button id="stopBtn" disabled>중단</button>
+    <button id="playBtn" disabled>재생</button>
+
+    <p><strong>STT 결과:</strong> <span id="transcript"></span></p>
+
+    <audio id="audioPlayback" controls style="display: none;"></audio>
+
+    <script>
+        let mediaRecorder;
+        let recordedChunks = [];
+        let audioBlob;
+        let recognition;
+        let isRecording = false;
+
+        const startBtn = document.getElementById('startBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const playBtn = document.getElementById('playBtn');
+        const transcriptEl = document.getElementById('transcript');
+        const audioPlayback = document.getElementById('audioPlayback');
+
+        startBtn.onclick = async () => {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            recordedChunks = [];
+
+            mediaRecorder = new MediaRecorder(stream);
+            mediaRecorder.ondataavailable = e => recordedChunks.push(e.data);
+            mediaRecorder.onstop = () => {
+                audioBlob = new Blob(recordedChunks, { type: 'audio/webm' });
+                const url = URL.createObjectURL(audioBlob);
+                audioPlayback.src = url;
+                audioPlayback.style.display = 'block';
+                playBtn.disabled = false;
+            };
+
+            mediaRecorder.start();
+            isRecording = true;
+
+            // STT 시작
+            window.SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            recognition = new SpeechRecognition();
+            recognition.lang = 'ko-KR';
+            recognition.interimResults = true;
+            recognition.continuous = true;
+
+            recognition.onresult = (event) => {
+                const transcript = Array.from(event.results)
+                    .map(result => result[0].transcript)
+                    .join('');
+                transcriptEl.textContent = transcript;
+            };
+
+            recognition.start();
+
+            startBtn.disabled = true;
+            stopBtn.disabled = false;
+        };
+
+        stopBtn.onclick = () => {
+            if (isRecording) {
+                mediaRecorder.stop();
+                recognition.stop();
+                isRecording = false;
+            }
+
+            startBtn.disabled = false;
+            stopBtn.disabled = true;
+        };
+
+        playBtn.onclick = () => {
+            if (audioBlob) {
+                audioPlayback.play();
+            }
+        };
+    </script>
+</body>
+
+</html>
