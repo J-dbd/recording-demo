@@ -4,132 +4,68 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>모바일 음성 녹음 및 STT</title>
+    <title>🎤 음성 녹음 데모</title>
 </head>
 
 <body>
-    <h2>🎤 음성 녹음 및 인식</h2>
+    <h2>🎤 음성 녹음 데모 (모바일용)</h2>
 
     <button id="startBtn">녹음 시작</button>
-    <button id="stopBtn" disabled>중단</button>
-    <button id="playBtn" disabled>재생</button>
+    <button id="stopBtn" disabled>녹음 종료</button>
 
-    <p><strong>STT 결과:</strong> <span id="transcript"></span></p>
+    <p><strong>🎧 녹음 결과:</strong></p>
     <audio id="audioPlayback" controls style="display: none;"></audio>
 
     <hr />
     <h3>📋 상태 메시지 (Console)</h3>
-    <pre id="logBox" style="background-color: #f0f0f0; padding: 10px; height: 150px; overflow-y: auto;"></pre>
+    <pre id="logBox" style="background-color: #f0f0f0; padding: 10px; height: 160px; overflow-y: auto;"></pre>
 
     <script>
         let mediaRecorder;
         let recordedChunks = [];
         let audioBlob;
-        let recognition;
-        let isRecording = false;
 
         const startBtn = document.getElementById('startBtn');
         const stopBtn = document.getElementById('stopBtn');
-        const playBtn = document.getElementById('playBtn');
-        const transcriptEl = document.getElementById('transcript');
         const audioPlayback = document.getElementById('audioPlayback');
         const logBox = document.getElementById('logBox');
 
-        function log(message) {
-            logBox.textContent += `[${new Date().toLocaleTimeString()}] ${message}\n`;
+        function log(msg) {
+            logBox.textContent += `[${new Date().toLocaleTimeString()}] ${msg}\n`;
             logBox.scrollTop = logBox.scrollHeight;
         }
 
-        window.onload = () => {
-            log("페이지 로드 완료");
-            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                log("❌ 브라우저가 getUserMedia를 지원하지 않습니다.");
-            } else {
-                log("✅ getUserMedia 지원 확인됨.");
-            }
-
-            if (!('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) {
-                log("❌ 이 브라우저는 SpeechRecognition을 지원하지 않습니다.");
-            } else {
-                log("✅ SpeechRecognition 지원 확인됨.");
-            }
-        };
-
         startBtn.onclick = async () => {
-            log("녹음 시작 버튼 클릭됨");
-
+            log("🎬 녹음 시작 버튼 클릭됨");
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                log("🎤 마이크 권한 획득 성공");
-
                 recordedChunks = [];
                 mediaRecorder = new MediaRecorder(stream);
 
                 mediaRecorder.ondataavailable = e => recordedChunks.push(e.data);
+
                 mediaRecorder.onstop = () => {
                     audioBlob = new Blob(recordedChunks, { type: 'audio/webm' });
-                    const url = URL.createObjectURL(audioBlob);
-                    audioPlayback.src = url;
+                    audioPlayback.src = URL.createObjectURL(audioBlob);
                     audioPlayback.style.display = 'block';
-                    playBtn.disabled = false;
-                    log("🛑 녹음 종료 및 재생 준비 완료");
+                    log("✅ 녹음 완료. 재생 가능.");
                 };
 
                 mediaRecorder.start();
-                isRecording = true;
-                log("📼 MediaRecorder 녹음 시작");
-
-                // STT 시작
-                window.SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-                recognition = new SpeechRecognition();
-                recognition.lang = 'ko-KR';
-                recognition.interimResults = true;
-                recognition.continuous = true;
-
-                recognition.onresult = (event) => {
-                    const transcript = Array.from(event.results)
-                        .map(result => result[0].transcript)
-                        .join('');
-                    transcriptEl.textContent = transcript;
-                };
-
-                recognition.onerror = (event) => {
-                    log(`❗ STT 오류 발생: ${event.error}`);
-                };
-
-                recognition.onstart = () => log("🗣️ 음성 인식 시작됨");
-                recognition.onend = () => log("🛑 음성 인식 종료됨");
-
-                recognition.start();
-
                 startBtn.disabled = true;
                 stopBtn.disabled = false;
-
+                log("⏺️ MediaRecorder 녹음 시작");
             } catch (err) {
-                log("❌ 마이크 접근 권한 거부됨 또는 오류 발생");
-                log(err.message);
-                alert("⚠️ 마이크 권한이 필요합니다. 브라우저 권한 설정을 확인해주세요.");
+                log("❌ 마이크 접근 실패: " + err.message);
             }
         };
 
         stopBtn.onclick = () => {
-            log("중단 버튼 클릭됨");
-
-            if (isRecording) {
+            log("🛑 녹음 종료 버튼 클릭됨");
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
                 mediaRecorder.stop();
-                recognition.stop();
-                isRecording = false;
-                log("🔚 녹음 및 STT 중단");
-            }
-
-            startBtn.disabled = false;
-            stopBtn.disabled = true;
-        };
-
-        playBtn.onclick = () => {
-            if (audioBlob) {
-                audioPlayback.play();
-                log("▶️ 녹음 재생 시작");
+                startBtn.disabled = false;
+                stopBtn.disabled = true;
             }
         };
     </script>
