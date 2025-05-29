@@ -67,6 +67,11 @@
                 startBtn.disabled = false;
                 stopBtn.disabled = true;
             }
+
+            if (mediaRecorder.stream) {
+                mediaRecorder.stream.getTracks().forEach(track => track.stop());
+                log("🔇 마이크 스트림 해제됨");
+            }
         };
     </script>
 </body>
